@@ -26,6 +26,10 @@ import org.jboss.ejb3.session.SessionContainer;
 import org.jboss.ejb3.util.CollectionHelper;
 import org.jboss.metadata.ejb.jboss.JBossSessionBean31MetaData;
 import org.jboss.metadata.ejb.jboss.JBossSessionBeanMetaData;
+import org.jboss.metadata.ejb.jboss.jndi.resolver.impl.JNDIPolicyBasedJNDINameResolverFactory;
+import org.jboss.metadata.ejb.jboss.jndi.resolver.spi.SessionBean31JNDINameResolver;
+import org.jboss.metadata.ejb.jboss.jndipolicy.plugins.DefaultJNDIBindingPolicyFactory;
+import org.jboss.metadata.ejb.jboss.jndipolicy.spi.DefaultJndiBindingPolicy;
 
 import javax.naming.NamingException;
 import java.io.Serializable;
@@ -60,8 +64,8 @@ public class EJB31StatelessBusinessObjectFactory implements BusinessObjectFactor
          // do no-interface addition
          if(smd instanceof JBossSessionBean31MetaData)
          {
-            if(((JBossSessionBean31MetaData) smd).isNoInterfaceBean())
-               businessInterfaceNames.add(container.getBeanClassName());
+            if(((JBossSessionBean31MetaData) smd).isNoInterfaceBean() && businessInterface.equals(container.getBeanClass()))
+               return createNoInterfaceBusinessObject(container, sessionId, businessInterface);
          }
 
          String interfaceName = businessInterface.getName();
@@ -77,5 +81,25 @@ public class EJB31StatelessBusinessObjectFactory implements BusinessObjectFactor
          throw new RuntimeException("failed to invoke getBusinessObject", e);
       }
 
+   }
+
+   private <B> B createNoInterfaceBusinessObject(SessionContainer container, Serializable sessionId, Class<B> businessInterface)
+           throws NamingException
+   {
+      // we have determined it's the no-interface, let's hack
+
+      JBossSessionBean31MetaData beanMetaData = (JBossSessionBean31MetaData) container.getMetaData();
+      // get no-interface view jndi name
+      String noInterfaceJndiName = this.getJNDINameResolver(beanMetaData).resolveNoInterfaceJNDIName(beanMetaData);
+      return businessInterface.cast(container.getInitialContext().lookup(noInterfaceJndiName));
+   }
+
+   /**
+    * @see org.jboss.ejb3.nointerface.impl.jndi.AbstractNoInterfaceViewJNDIBinder#getJNDINameResolver(org.jboss.metadata.ejb.jboss.JBossSessionBean31MetaData)
+    */
+   private SessionBean31JNDINameResolver getJNDINameResolver(JBossSessionBean31MetaData sessionBean)
+   {
+      DefaultJndiBindingPolicy jndiBindingPolicy = DefaultJNDIBindingPolicyFactory.getDefaultJNDIBindingPolicy();
+      return JNDIPolicyBasedJNDINameResolverFactory.getJNDINameResolver(sessionBean, jndiBindingPolicy);
    }
 }
