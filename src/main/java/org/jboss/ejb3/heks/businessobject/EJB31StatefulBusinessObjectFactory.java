@@ -47,6 +47,17 @@ public class EJB31StatefulBusinessObjectFactory extends AbstractBusinessObjectFa
 {
    private Kernel kernel;
 
+   public EJB31StatefulBusinessObjectFactory()
+   {
+
+   }
+   
+   @Deprecated
+   public EJB31StatefulBusinessObjectFactory(Kernel kernel)
+   {
+      setKernel(kernel);
+   }
+
    private static boolean arrayContains(Object a[], Object relevant)
    {
       for(Object o : a)
@@ -93,7 +104,7 @@ public class EJB31StatefulBusinessObjectFactory extends AbstractBusinessObjectFa
    {
       Class<?> beanClass = container.getBeanClass();
 
-      String name = container.getName();
+      String name = container.getDeploymentQualifiedName();
       KernelControllerContext endpointContext = (KernelControllerContext) kernel.getController().getContext(name, null);
       
       // create an invocation handler
