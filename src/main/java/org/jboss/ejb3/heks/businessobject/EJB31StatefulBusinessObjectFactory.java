@@ -140,7 +140,11 @@ public class EJB31StatefulBusinessObjectFactory extends AbstractBusinessObjectFa
       if(!sessionBean31MetaData.isNoInterfaceBean())
          return ViewType.UNKNOWN;
 
-      return ViewType.NO_INTERFACE;
+      // it could still be an unknown view, make sure it's the no-interface view
+      if(intf.equals(container.getBeanClass()))
+         return ViewType.NO_INTERFACE;
+
+      return ViewType.UNKNOWN;
    }
 
    @Inject
