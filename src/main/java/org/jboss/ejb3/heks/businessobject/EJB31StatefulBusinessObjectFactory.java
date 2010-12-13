@@ -32,8 +32,10 @@ import org.jboss.ejb3.session.SessionContainer;
 import org.jboss.ejb3.stateful.StatefulContainer;
 import org.jboss.kernel.Kernel;
 import org.jboss.kernel.spi.dependency.KernelControllerContext;
+import org.jboss.metadata.ejb.jboss.JBossEnterpriseBeanMetaData;
 import org.jboss.metadata.ejb.jboss.JBossSessionBean31MetaData;
 import org.jboss.metadata.ejb.jboss.JBossSessionBeanMetaData;
+import org.jboss.metadata.ejb.spec.AsyncMethodsMetaData;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
@@ -107,8 +109,15 @@ public class EJB31StatefulBusinessObjectFactory extends AbstractBusinessObjectFa
       String name = container.getDeploymentQualifiedName();
       KernelControllerContext endpointContext = (KernelControllerContext) kernel.getController().getContext(name, null);
       
+      AsyncMethodsMetaData asyncMethods = null;
+      JBossEnterpriseBeanMetaData sessionBeanMetaData = container.getXml();
+      if (sessionBeanMetaData instanceof JBossSessionBean31MetaData)
+      {
+         asyncMethods = ((JBossSessionBean31MetaData) sessionBeanMetaData).getAsyncMethods();
+      }
       // create an invocation handler
-      InvocationHandler invocationHandler = new NoInterfaceViewInvocationHandler(endpointContext, sessionId, intf);
+      InvocationHandler invocationHandler = new NoInterfaceViewInvocationHandler(endpointContext, sessionId, intf,
+            asyncMethods == null ? new AsyncMethodsMetaData() : asyncMethods);
 
       // Now create the proxy
       Object noInterfaceView = new JavassistProxyFactory().createProxy(new Class<?>[] {beanClass}, invocationHandler);
